@@ -56,13 +56,13 @@ runs:
         shell: bash
         id: create-schemas
         run: |
+          PGPASSWORD="${{ inputs.db_password }}"
+          echo "PGPASSWORD=${PGPASSWORD}" >> $GITHUB_ENV
           IFS=' ' read -r -a schemas <<< "${{ inputs.db_schemas }}"
           for schema in "${schemas[@]}"
           do
-            PGPASSWORD=admin psql -h localhost -p ${{ inputs.db_port }} -U ${{ inputs.db_user }} -d ${{ inputs.db_name }} -c "CREATE SCHEMA IF NOT EXISTS $schema;"
+            psql -h localhost -p ${{ inputs.db_port }} -U ${{ inputs.db_user }} -d ${{ inputs.db_name }} -c "CREATE SCHEMA IF NOT EXISTS $schema;"
           done
-        env:
-          PGPASSWORD: admin
 
       - name: Make migrations
         shell: bash
