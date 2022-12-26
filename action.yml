@@ -1,0 +1,77 @@
+name: "Set up test db"
+description: "Set up test db"
+inputs:
+  db_user:
+    description: DB user
+    required: false
+    default: admin
+  db_password:
+    description: DB password
+    required: false
+    default: admin
+  db_name:
+    description: DB user
+    required: false
+    default: all_services_test
+  db_port:
+    description: DB port
+    required: false
+    default: 5432
+  db_name:
+    description: DB name
+    required: false
+    default: all_services_test
+  db_extensions:
+    description: DB extensions list separated by a space
+    required: false
+    default: uuid-ossp
+  db_schemas:
+    description: DB schemas list to create separated by a space
+    required: false
+  db_migrations_path:
+    description: Db migrations path
+    required: false
+    default: db/migrations
+  db_migrations_config_path:
+    description: Db migrations config path
+    required: false
+    default: db/test/conf/flyway.conf
+
+runs:
+  using: "composite"
+  steps:
+      - name: Setup Postgres database
+        uses: Daniel-Marynicz/postgresql-action@master
+        with:
+          postgres_image_tag: 12.7
+          app_user: ${{ inputs.user }}
+          app_user_password: ${{ inputs.db_password }}
+          app_db: ${{ inputs.db_name }}
+          postgres_extensions: ${{ inputs.db_extensions }}   
+
+      - name: Install psql
+        shell: bash
+        id: install-psql
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends postgresql-client
+      
+      - name: Create Schemas
+        shell: bash
+        id: create-schemas   
+        run: | 
+          psql -h localhost -U -p ${{ inputs.db_port }} ${{ inputs.db_user }} --d ${{ inputs.db_name }} -c 'CREATE SCHEMA IF NOT EXISTS translation;'
+        env: 
+          PGPASSWORD: ${{ inputs.db_password }}
+
+      - uses: actions/checkout@v3 
+      - name: Make migrations
+        shell: bash
+        id: make-migrations
+        run: |
+          wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/8.5.11/flyway-commandline-8.5.11-linux-x64.tar.gz | tar xvz && sudo ln -s `pwd`/flyway-8.5.11/flyway /usr/local/bin
+          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
+            -user=${{ inputs.db_user }} \
+            -password=${{ inputs.db_password }} \
+            -locations=${{ inputs.db_migrations_path }} \
+            -configFiles=${{ inputs.db_migrations_config_path }}
