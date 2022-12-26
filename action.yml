@@ -59,7 +59,7 @@ runs:
           IFS=' ' read -r -a schemas <<< "${{ inputs.db_schemas }}"
           for schema in "${schemas[@]}"
           do
-            psql -h localhost -p ${{ inputs.db_port }} -U ${{ inputs.db_user }} -w ${{ inputs.db_password }} -d ${{ inputs.db_name }} -c "CREATE SCHEMA IF NOT EXISTS $schema;"
+            PGPASSWORD=${{ inputs.db_password }} psql -h localhost -p ${{ inputs.db_port }} -U ${{ inputs.db_user }} -d ${{ inputs.db_name }} -c "CREATE SCHEMA IF NOT EXISTS $schema;"
           done
 
       - name: Make migrations
