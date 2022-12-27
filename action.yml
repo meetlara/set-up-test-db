@@ -58,9 +58,12 @@ runs:
         if: ${{ inputs.db_schemas }} != ''
         run: |
           IFS=' ' read -r -a schemas <<< "${{ inputs.db_schemas }}"
+          export PGPASSWORD="${{ inputs.db_password }}"
+          echo $PGPASSWORD
           for schema in "${schemas[@]}"
           do
-            sudo PGPASSWORD="${{ inputs.db_password }}" psql -w --no-password -h localhost -p ${{ inputs.db_port }} -U ${{ inputs.db_user }} -d ${{ inputs.db_name }} -c "CREATE SCHEMA IF NOT EXISTS $schema;"
+            echo $PGPASSWORD
+            psql -w --no-password -h localhost -p ${{ inputs.db_port }} -U ${{ inputs.db_user }} -d ${{ inputs.db_name }} -c "CREATE SCHEMA IF NOT EXISTS $schema;"
           done
         env:
           PGPASSWORD: "${{ inputs.db_password }}"
