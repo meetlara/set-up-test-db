@@ -61,7 +61,6 @@ runs:
           connection_string="postgres://${{ inputs.db_user }}:${{ inputs.db_password }}@localhost:${{ inputs.db_port }}/${{ inputs.db_name }}"
           for schema in "${schemas[@]}"
           do
-            echo $connection_string
             psql -d $connection_string -c "CREATE SCHEMA IF NOT EXISTS $schema;"
           done
 
