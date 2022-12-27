@@ -58,15 +58,12 @@ runs:
         if: ${{ inputs.db_schemas }} != ''
         run: |
           IFS=' ' read -r -a schemas <<< "${{ inputs.db_schemas }}"
-          export PGPASSWORD="${{ inputs.db_password }}"
-          echo $PGPASSWORD
+          connection_string="postgres://${{ inputs.db_user }}:${{ inputs.db_password }}@localhost:${{ inputs.db_port }}/${{ inputs.db_name }}"
           for schema in "${schemas[@]}"
           do
-            echo $PGPASSWORD
-            psql -w --no-password -h localhost -p ${{ inputs.db_port }} -U ${{ inputs.db_user }} -d ${{ inputs.db_name }} -c "CREATE SCHEMA IF NOT EXISTS $schema;"
+            echo $connection_string
+            psql -d $connection_string -c "CREATE SCHEMA IF NOT EXISTS $schema;"
           done
-        env:
-          PGPASSWORD: "${{ inputs.db_password }}"
 
       - name: Make migrations
         shell: bash
