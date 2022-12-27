@@ -40,10 +40,10 @@ runs:
         uses: Daniel-Marynicz/postgresql-action@master
         with:
           postgres_image_tag: 12.7
-          app_user: ${{ inputs.user }}
-          app_user_password: ${{ inputs.db_password }}
-          app_db: ${{ inputs.db_name }}
-          postgres_extensions: ${{ inputs.db_extensions }}   
+          app_user: "${{ inputs.user }}"
+          app_user_password: "${{ inputs.db_password }}"
+          app_db: "${{ inputs.db_name }}"
+          postgres_extensions: "${{ inputs.db_extensions }}"
 
       - name: Install psql
         shell: bash
