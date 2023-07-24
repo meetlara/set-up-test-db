@@ -32,6 +32,25 @@ inputs:
     description: Db migrations config path
     required: false
     default: db/test/conf/flyway.conf
+  github_token:
+    description: Github token
+    required: false
+  migrate_chat:
+    description: Migrate chat service
+    required: false
+    default: "false"
+  migrate_employee:
+    description: Migrate employee service
+    required: false
+    default: "false"
+  migrate_case:
+    description: Migrate case service
+    required: false
+    default: "false"
+  migrate_self:
+    description: Migrate the service itself
+    required: false
+    default: "true"
 
 runs:
   using: "composite"
@@ -64,11 +83,78 @@ runs:
             psql -d $connection_string -c "CREATE SCHEMA IF NOT EXISTS $schema;"
           done
 
+      - name: Install flyway
+        shell: bash
+        id: install-flyway
+        run: wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/8.5.11/flyway-commandline-8.5.11-linux-x64.tar.gz | tar xvz && sudo ln -s `pwd`/flyway-8.5.11/flyway /usr/local/bin
+
+      # Migrate chat service
+      - name: Copy migrations from chat
+        uses: actions/checkout@v3
+        if: ${{ inputs.migrate_chat }} == 'true'
+        with:
+          repository: 'meetlara/chat-service'
+          ref: 'main'
+          token: ${{ inputs.github_token }} 
+          path: chat-service
+      - name: Make chat migrations
+        shell: bash
+        id: make-chat-migrations
+        if: ${{ inputs.migrate_chat }} == 'true'
+        run: |
+          wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/8.5.11/flyway-commandline-8.5.11-linux-x64.tar.gz | tar xvz && sudo ln -s `pwd`/flyway-8.5.11/flyway /usr/local/bin
+          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
+            -user=admin \
+            -password=admin \
+            -locations=chat-service/${{ inputs.db_migrations_path }} \
+            -configFiles=chat-service/${{ inputs.db_migrations_config_path }}
+
+      # Migrate employee service
+      - name: Copy migrations from employee-service
+        uses: actions/checkout@v3
+        if: ${{ inputs.migrate_employee }} == 'true'
+        with:
+          repository: 'meetlara/employee-service'
+          ref: 'main'
+          token: ${{ inputs.github_token }} 
+          path: employee-service
+      - name: Make employee migrations
+        shell: bash
+        id: make-employee-migrations
+        if: ${{ inputs.migrate_employee }} == 'true'
+        run: |
+          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
+            -user=admin \
+            -password=admin \
+            -locations=employee-service/${{ inputs.db_migrations_path }} \
+            -configFiles=employee-service/${{ inputs.db_migrations_config_path }}
+
+      # Migrate case service
+      - name: Copy migrations from cases
+        uses: actions/checkout@v3
+        if: ${{ inputs.migrate_case }} == 'true'
+        with:
+          repository: 'meetlara/case-service'
+          ref: 'main'
+          token: ${{ inputs.github_token }} 
+          path: case-service
+      - name: Make case migrations
+        shell: bash
+        id: make-case-migrations
+        if: ${{ inputs.migrate_case }} == 'true'
+        run: |
+          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
+            -user=admin \
+            -password=admin \
+            -locations=case-service/${{ inputs.db_migrations_path }} \
+            -configFiles=case-service/${{ inputs.db_migrations_config_path }}
+
+      # Migrate the service itself
       - name: Make migrations
         shell: bash
         id: make-migrations
+        if: ${{ inputs.migrate_self }} == 'true'
         run: |
-          wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/8.5.11/flyway-commandline-8.5.11-linux-x64.tar.gz | tar xvz && sudo ln -s `pwd`/flyway-8.5.11/flyway /usr/local/bin
           flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
             -user=${{ inputs.db_user }} \
             -password=${{ inputs.db_password }} \
