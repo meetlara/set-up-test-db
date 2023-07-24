@@ -32,6 +32,29 @@ inputs:
     description: Db migrations config path
     required: false
     default: db/test/conf/flyway.conf
+  github_token:
+    description: Github token
+    required: false
+  migrate_chat:
+    description: Migrate chat service
+    required: false
+    default: "false"
+  migrate_employee:
+    description: Migrate employee service
+    required: false
+    default: "false"
+  migrate_case:
+    description: Migrate case service
+    required: false
+    default: "false"
+  migrate_self:
+    description: Migrate the service itself
+    required: false
+    default: "true"
+  migrate_self_before:
+    description: Migrate the service itself before (chat, employee, case, last)
+    required: false
+    default: "last"
 
 runs:
   using: "composite"
@@ -55,7 +78,7 @@ runs:
       - name: Create schemas
         shell: bash
         id: create-schemas
-        if: ${{ inputs.db_schemas }} != ''
+        if: inputs.db_schemas != ''
         run: |
           IFS=' ' read -r -a schemas <<< "${{ inputs.db_schemas }}"
           connection_string="postgres://${{ inputs.db_user }}:${{ inputs.db_password }}@localhost:${{ inputs.db_port }}/${{ inputs.db_name }}"
@@ -64,11 +87,110 @@ runs:
             psql -d $connection_string -c "CREATE SCHEMA IF NOT EXISTS $schema;"
           done
 
+      - name: Install flyway
+        shell: bash
+        id: install-flyway
+        run: wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/8.5.11/flyway-commandline-8.5.11-linux-x64.tar.gz | tar xvz && sudo ln -s `pwd`/flyway-8.5.11/flyway /usr/local/bin
+
+      - name: Make migrations before chat
+        shell: bash
+        id: make-migrations-before-chat
+        if: inputs.migrate_self == 'true' && inputs.migrate_self_before == 'chat'
+        run: |
+          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
+            -user=${{ inputs.db_user }} \
+            -password=${{ inputs.db_password }} \
+            -locations=${{ inputs.db_migrations_path }} \
+            -configFiles=${{ inputs.db_migrations_config_path }}
+
+      # Migrate chat service
+      - name: Copy migrations from chat
+        uses: actions/checkout@v3
+        if: inputs.migrate_chat == 'true'
+        with:
+          repository: 'meetlara/chat-service'
+          ref: 'main'
+          token: ${{ inputs.github_token }} 
+          path: chat-service
+      - name: Make chat migrations
+        shell: bash
+        id: make-chat-migrations
+        if: inputs.migrate_chat == 'true'
+        run: |
+          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
+            -user=admin \
+            -password=admin \
+            -locations=chat-service/${{ inputs.db_migrations_path }} \
+            -configFiles=chat-service/${{ inputs.db_migrations_config_path }}
+
+      - name: Make migrations before employee
+        shell: bash
+        id: make-migrations-before-employee
+        if: inputs.migrate_self == 'true' && inputs.migrate_self_before == 'employee'
+        run: |
+          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
+            -user=${{ inputs.db_user }} \
+            -password=${{ inputs.db_password }} \
+            -locations=${{ inputs.db_migrations_path }} \
+            -configFiles=${{ inputs.db_migrations_config_path }}
+
+      # Migrate employee service
+      - name: Copy migrations from employee-service
+        uses: actions/checkout@v3
+        if: inputs.migrate_employee == 'true'
+        with:
+          repository: 'meetlara/employee-service'
+          ref: 'main'
+          token: ${{ inputs.github_token }} 
+          path: employee-service
+      - name: Make employee migrations
+        shell: bash
+        id: make-employee-migrations
+        if: inputs.migrate_employee == 'true'
+        run: |
+          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
+            -user=admin \
+            -password=admin \
+            -locations=employee-service/${{ inputs.db_migrations_path }} \
+            -configFiles=employee-service/${{ inputs.db_migrations_config_path }}
+
+      - name: Make migrations before case
+        shell: bash
+        id: make-migrations-before-case
+        if: inputs.migrate_self == 'true' && inputs.migrate_self_before == 'case'
+        run: |
+          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
+            -user=${{ inputs.db_user }} \
+            -password=${{ inputs.db_password }} \
+            -locations=${{ inputs.db_migrations_path }} \
+            -configFiles=${{ inputs.db_migrations_config_path }}
+
+      # Migrate case service
+      - name: Copy migrations from cases
+        uses: actions/checkout@v3
+        if: inputs.migrate_case == 'true'
+        with:
+          repository: 'meetlara/case-service'
+          ref: 'main'
+          token: ${{ inputs.github_token }} 
+          path: case-service
+      - name: Make case migrations
+        shell: bash
+        id: make-case-migrations
+        if: inputs.migrate_case == 'true'
+        run: |
+          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
+            -user=admin \
+            -password=admin \
+            -locations=case-service/${{ inputs.db_migrations_path }} \
+            -configFiles=case-service/${{ inputs.db_migrations_config_path }}
+
+      # Migrate the service itself
       - name: Make migrations
         shell: bash
         id: make-migrations
+        if: inputs.migrate_self == 'true' && inputs.migrate_self_before == 'last'
         run: |
-          wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/8.5.11/flyway-commandline-8.5.11-linux-x64.tar.gz | tar xvz && sudo ln -s `pwd`/flyway-8.5.11/flyway /usr/local/bin
           flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
             -user=${{ inputs.db_user }} \
             -password=${{ inputs.db_password }} \
