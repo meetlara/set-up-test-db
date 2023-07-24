@@ -95,7 +95,7 @@ runs:
       # Migrate the service itself before chat
       - name: Make migrations
         shell: bash
-        id: make-migrations
+        id: make-migrations-before-chat
         if: ${{ inputs.migrate_self }} == 'true' && ${{ inputs.migrate_self_before }} == 'chat'
         run: |
           flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
@@ -127,7 +127,7 @@ runs:
       # Migrate the service itself before employee
       - name: Make migrations
         shell: bash
-        id: make-migrations
+        id: make-migrations-before-employee
         if: ${{ inputs.migrate_self }} == 'true' && ${{ inputs.migrate_self_before }} == 'employee'
         run: |
           flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
@@ -159,7 +159,7 @@ runs:
       # Migrate the service itself before case
       - name: Make migrations
         shell: bash
-        id: make-migrations
+        id: make-migrations-before-case
         if: ${{ inputs.migrate_self }} == 'true' && ${{ inputs.migrate_self_before }} == 'case'
         run: |
           flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
