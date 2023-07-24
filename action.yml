@@ -92,11 +92,10 @@ runs:
         id: install-flyway
         run: wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/8.5.11/flyway-commandline-8.5.11-linux-x64.tar.gz | tar xvz && sudo ln -s `pwd`/flyway-8.5.11/flyway /usr/local/bin
 
-      # Migrate the service itself before chat
-      - name: Make migrations
+      - name: Make migrations before chat
         shell: bash
         id: make-migrations-before-chat
-        if: ${{ inputs.migrate_self }} == 'true' && ${{ inputs.migrate_self_before }} == 'chat'
+        if: ${{ inputs.migrate_self == 'true' && inputs.migrate_self_before == 'chat' }}
         run: |
           flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
             -user=${{ inputs.db_user }} \
@@ -124,11 +123,10 @@ runs:
             -locations=chat-service/${{ inputs.db_migrations_path }} \
             -configFiles=chat-service/${{ inputs.db_migrations_config_path }}
 
-      # Migrate the service itself before employee
-      - name: Make migrations
+      - name: Make migrations before employee
         shell: bash
         id: make-migrations-before-employee
-        if: ${{ inputs.migrate_self }} == 'true' && ${{ inputs.migrate_self_before }} == 'employee'
+        if: ${{ inputs.migrate_self == 'true' && inputs.migrate_self_before == 'employee' }}
         run: |
           flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
             -user=${{ inputs.db_user }} \
@@ -156,11 +154,10 @@ runs:
             -locations=employee-service/${{ inputs.db_migrations_path }} \
             -configFiles=employee-service/${{ inputs.db_migrations_config_path }}
 
-      # Migrate the service itself before case
-      - name: Make migrations
+      - name: Make migrations before case
         shell: bash
         id: make-migrations-before-case
-        if: ${{ inputs.migrate_self }} == 'true' && ${{ inputs.migrate_self_before }} == 'case'
+        if: ${{ inputs.migrate_self == 'true' && inputs.migrate_self_before == 'case' }}
         run: |
           flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
             -user=${{ inputs.db_user }} \
@@ -192,7 +189,7 @@ runs:
       - name: Make migrations
         shell: bash
         id: make-migrations
-        if: ${{ inputs.migrate_self }} == 'true' && ${{ inputs.migrate_self_before }} == 'last'
+        if: ${{ inputs.migrate_self == 'true' && inputs.migrate_self_before == 'last' }}
         run: |
           flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
             -user=${{ inputs.db_user }} \
