@@ -102,7 +102,6 @@ runs:
         id: make-chat-migrations
         if: ${{ inputs.migrate_chat }} == 'true'
         run: |
-          wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/8.5.11/flyway-commandline-8.5.11-linux-x64.tar.gz | tar xvz && sudo ln -s `pwd`/flyway-8.5.11/flyway /usr/local/bin
           flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
             -user=admin \
             -password=admin \
