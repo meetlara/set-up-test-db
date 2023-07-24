@@ -78,7 +78,7 @@ runs:
       - name: Create schemas
         shell: bash
         id: create-schemas
-        if: ${{ inputs.db_schemas }} != ''
+        if: inputs.db_schemas != ''
         run: |
           IFS=' ' read -r -a schemas <<< "${{ inputs.db_schemas }}"
           connection_string="postgres://${{ inputs.db_user }}:${{ inputs.db_password }}@localhost:${{ inputs.db_port }}/${{ inputs.db_name }}"
@@ -95,7 +95,7 @@ runs:
       - name: Make migrations before chat
         shell: bash
         id: make-migrations-before-chat
-        if: ${{ inputs.migrate_self == 'true' && inputs.migrate_self_before == 'chat' }}
+        if: inputs.migrate_self == 'true' && inputs.migrate_self_before == 'chat'
         run: |
           flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
             -user=${{ inputs.db_user }} \
@@ -106,7 +106,7 @@ runs:
       # Migrate chat service
       - name: Copy migrations from chat
         uses: actions/checkout@v3
-        if: ${{ inputs.migrate_chat }} == 'true'
+        if: inputs.migrate_chat == 'true'
         with:
           repository: 'meetlara/chat-service'
           ref: 'main'
@@ -115,7 +115,7 @@ runs:
       - name: Make chat migrations
         shell: bash
         id: make-chat-migrations
-        if: ${{ inputs.migrate_chat }} == 'true'
+        if: inputs.migrate_chat == 'true'
         run: |
           flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
             -user=admin \
@@ -126,7 +126,7 @@ runs:
       - name: Make migrations before employee
         shell: bash
         id: make-migrations-before-employee
-        if: ${{ inputs.migrate_self == 'true' && inputs.migrate_self_before == 'employee' }}
+        if: inputs.migrate_self == 'true' && inputs.migrate_self_before == 'employee'
         run: |
           flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
             -user=${{ inputs.db_user }} \
@@ -137,7 +137,7 @@ runs:
       # Migrate employee service
       - name: Copy migrations from employee-service
         uses: actions/checkout@v3
-        if: ${{ inputs.migrate_employee }} == 'true'
+        if: inputs.migrate_employee == 'true'
         with:
           repository: 'meetlara/employee-service'
           ref: 'main'
@@ -146,7 +146,7 @@ runs:
       - name: Make employee migrations
         shell: bash
         id: make-employee-migrations
-        if: ${{ inputs.migrate_employee }} == 'true'
+        if: inputs.migrate_employee == 'true'
         run: |
           flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
             -user=admin \
@@ -157,7 +157,7 @@ runs:
       - name: Make migrations before case
         shell: bash
         id: make-migrations-before-case
-        if: ${{ inputs.migrate_self == 'true' && inputs.migrate_self_before == 'case' }}
+        if: inputs.migrate_self == 'true' && inputs.migrate_self_before == 'case'
         run: |
           flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
             -user=${{ inputs.db_user }} \
@@ -168,7 +168,7 @@ runs:
       # Migrate case service
       - name: Copy migrations from cases
         uses: actions/checkout@v3
-        if: ${{ inputs.migrate_case }} == 'true'
+        if: inputs.migrate_case == 'true'
         with:
           repository: 'meetlara/case-service'
           ref: 'main'
@@ -177,7 +177,7 @@ runs:
       - name: Make case migrations
         shell: bash
         id: make-case-migrations
-        if: ${{ inputs.migrate_case }} == 'true'
+        if: inputs.migrate_case == 'true'
         run: |
           flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
             -user=admin \
@@ -189,7 +189,7 @@ runs:
       - name: Make migrations
         shell: bash
         id: make-migrations
-        if: ${{ inputs.migrate_self == 'true' && inputs.migrate_self_before == 'last' }}
+        if: inputs.migrate_self == 'true' && inputs.migrate_self_before == 'last'
         run: |
           flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
             -user=${{ inputs.db_user }} \
