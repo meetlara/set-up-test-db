@@ -47,6 +47,10 @@ inputs:
     description: Migrate case service
     required: false
     default: "false"
+  migrate_dashboard:
+    description: Migrate dashboard service
+    required: false
+    default: "false"
   migrate_self:
     description: Migrate the service itself
     required: false
@@ -196,3 +200,23 @@ runs:
             -password=${{ inputs.db_password }} \
             -locations=${{ inputs.db_migrations_path }} \
             -configFiles=${{ inputs.db_migrations_config_path }}
+
+      # Migrate dashboard service
+      - name: Copy migrations from dashboard
+        uses: actions/checkout@v3
+        if: inputs.migrate_dashboard == 'true'
+        with:
+          repository: 'meetlara/dashboard-service'
+          ref: 'main'
+          token: ${{ inputs.github_token }} 
+          path: dashboard-service
+      - name: Make dashboard migrations
+        shell: bash
+        id: make-dashboard-migrations
+        if: inputs.migrate_dashboard == 'true'
+        run: |
+          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
+            -user=admin \
+            -password=admin \
+            -locations=dashboard-service/${{ inputs.db_migrations_path }} \
+            -configFiles=dashboard-service/${{ inputs.db_migrations_config_path }}
