@@ -56,7 +56,7 @@ inputs:
     required: false
     default: "true"
   migrate_self_before:
-    description: Migrate the service itself before (chat, employee, case, last)
+    description: Migrate the service itself before (chat, employee, case, dashboard, last)
     required: false
     default: "last"
 
@@ -188,6 +188,17 @@ runs:
             -password=admin \
             -locations=case-service/${{ inputs.db_migrations_path }} \
             -configFiles=case-service/${{ inputs.db_migrations_config_path }}
+
+      - name: Make migrations before dashboard
+        shell: bash
+        id: make-migrations-before-dashboard
+        if: inputs.migrate_self == 'true' && inputs.migrate_self_before == 'dashboard'
+        run: |
+          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
+            -user=${{ inputs.db_user }} \
+            -password=${{ inputs.db_password }} \
+            -locations=${{ inputs.db_migrations_path }} \
+            -configFiles=${{ inputs.db_migrations_config_path }}
 
       # Migrate dashboard service
       - name: Copy migrations from dashboard
