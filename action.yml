@@ -189,18 +189,6 @@ runs:
             -locations=case-service/${{ inputs.db_migrations_path }} \
             -configFiles=case-service/${{ inputs.db_migrations_config_path }}
 
-      # Migrate the service itself
-      - name: Make migrations
-        shell: bash
-        id: make-migrations
-        if: inputs.migrate_self == 'true' && inputs.migrate_self_before == 'last'
-        run: |
-          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
-            -user=${{ inputs.db_user }} \
-            -password=${{ inputs.db_password }} \
-            -locations=${{ inputs.db_migrations_path }} \
-            -configFiles=${{ inputs.db_migrations_config_path }}
-
       # Migrate dashboard service
       - name: Copy migrations from dashboard
         uses: actions/checkout@v3
@@ -220,3 +208,16 @@ runs:
             -password=admin \
             -locations=dashboard-service/${{ inputs.db_migrations_path }} \
             -configFiles=dashboard-service/${{ inputs.db_migrations_config_path }}
+
+      # Migrate the service itself
+      - name: Make migrations
+        shell: bash
+        id: make-migrations
+        if: inputs.migrate_self == 'true' && inputs.migrate_self_before == 'last'
+        run: |
+          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
+            -user=${{ inputs.db_user }} \
+            -password=${{ inputs.db_password }} \
+            -locations=${{ inputs.db_migrations_path }} \
+            -configFiles=${{ inputs.db_migrations_config_path }}
+
