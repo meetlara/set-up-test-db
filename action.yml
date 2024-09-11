@@ -72,12 +72,23 @@ runs:
           app_db: "${{ inputs.db_name }}"
           postgres_extensions: "${{ inputs.db_extensions }}"
 
+      # Cache step: tries to restore the PostgreSQL client from cache
+      - name: Cache PostgreSQL Client
+        id: cache-psql
+        uses: actions/cache@v3
+        with:
+          path: /usr/bin/psql
+          key: ${{ runner.os }}-postgresql-client
+          restore-keys: |
+            ${{ runner.os }}-postgresql-client
+
+      # Install step: installs PostgreSQL only if it's not found in the cache
       - name: Install psql
-        shell: bash
-        id: install-psql
+        if: steps.cache-psql.outputs.cache-hit != 'true'
         run: |
-          sudo apt-get update
+          sudo apt-get update -qq
           sudo apt-get install --yes --no-install-recommends postgresql-client
+        shell: bash
 
       - name: Create schemas
         shell: bash
@@ -91,10 +102,21 @@ runs:
             psql -d $connection_string -c "CREATE SCHEMA IF NOT EXISTS $schema;"
           done
 
-      - name: Install flyway
+      - name: Cache Flyway binary
+        uses: actions/cache@v3
+        id: cache-flyway
+        with:
+          path: flyway-8.5.11
+          key: flyway-8.5.11-linux-x64
+
+      - name: Install Flyway (if not cached)
+        if: steps.cache-flyway.outputs.cache-hit != 'true'
         shell: bash
-        id: install-flyway
-        run: wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/8.5.11/flyway-commandline-8.5.11-linux-x64.tar.gz | tar xvz && sudo ln -s `pwd`/flyway-8.5.11/flyway /usr/local/bin
+        run: wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/8.5.11/flyway-commandline-8.5.11-linux-x64.tar.gz | tar xvz
+
+      - name: Configure Flyway
+        shell: bash
+        run: sudo ln -s `pwd`/flyway-8.5.11/flyway /usr/local/bin
 
       - name: Make migrations before chat
         shell: bash
