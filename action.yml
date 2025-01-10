@@ -72,9 +72,16 @@ runs:
           app_db: "${{ inputs.db_name }}"
           postgres_extensions: "${{ inputs.db_extensions }}"
 
-
+      # Cache step: tries to restore the PostgreSQL client from cache
+      - name: Cache PostgreSQL Client
+        id: cache-psql
+        uses: actions/cache@v3
+        with:
+          path: /usr/lib/postgresql
+          key: ${{ runner.os }}-postgresql-client
       # Install step: installs PostgreSQL only if it's not found in the cache
-      - name: Install psql
+      - name: Install PostgreSQL Client
+        if: steps.cache-psql.outputs.cache-hit != 'true' || !command -v psql
         run: |
           sudo apt-get update -qq
           sudo apt-get install --yes --no-install-recommends postgresql-client
