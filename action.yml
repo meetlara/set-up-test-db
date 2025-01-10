@@ -73,11 +73,11 @@ runs:
           postgres_extensions: "${{ inputs.db_extensions }}"
 
       # Cache step: tries to restore the PostgreSQL client from cache
-     - name: Cache PostgreSQL Client
+      - name: Cache PostgreSQL Client
         id: cache-psql
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
-          path: $HOME/.cache/postgresql
+          path: /usr/lib/postgresql
           key: ${{ runner.os }}-postgresql-client
 
       # Install step: installs PostgreSQL only if it's not found in the cache
@@ -86,10 +86,7 @@ runs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install --yes --no-install-recommends postgresql-client
-          mkdir -p $HOME/.cache/postgresql
-          cp -r /usr/lib/postgresql/14 $HOME/.cache/postgresql/
         shell: bash
-
 
       - name: Create schemas
         shell: bash
