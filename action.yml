@@ -85,6 +85,7 @@ runs:
           path: /usr/lib/postgresql
           key: ${{ runner.os }}-postgresql-client
         run: echo "CACHE_END_TIME=$(date +%s)" >> $GITHUB_ENV
+        shell: bash
 
       # Install step: installs PostgreSQL only if it's not found in the cache
       - name: Install PostgreSQL Client
