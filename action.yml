@@ -83,6 +83,7 @@ runs:
       - name: Start Timer
         id: start-timer
         run: echo "START_TIME=$(date +%s)" >> $GITHUB_ENV
+        shell: bash
 
       # Install step: installs PostgreSQL only if it's not found in the cache
       - name: Install PostgreSQL Client
