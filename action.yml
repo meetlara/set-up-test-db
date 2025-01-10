@@ -106,8 +106,7 @@ runs:
           echo "Cache step duration: ${CACHE_DURATION}s"
           echo "Install step duration: ${INSTALL_DURATION}s"
           echo "Total job duration: ${TOTAL_DURATION}s"
-
-
+        shell: bash
       - name: Create schemas
         shell: bash
         id: create-schemas
