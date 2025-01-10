@@ -73,20 +73,40 @@ runs:
           postgres_extensions: "${{ inputs.db_extensions }}"
 
       # Cache step: tries to restore the PostgreSQL client from cache
+      - name: Start Timer
+        id: start-timer
+        run: echo "START_TIME=$(date +%s)" >> $GITHUB_ENV
+
+      # Cache PostgreSQL Client
       - name: Cache PostgreSQL Client
         id: cache-psql
         uses: actions/cache@v4
         with:
           path: /usr/lib/postgresql
           key: ${{ runner.os }}-postgresql-client
+        run: echo "CACHE_END_TIME=$(date +%s)" >> $GITHUB_ENV
 
       # Install step: installs PostgreSQL only if it's not found in the cache
       - name: Install PostgreSQL Client
         if: steps.cache-psql.outputs.cache-hit != 'true'
         run: |
+          echo "INSTALL_START_TIME=$(date +%s)" >> $GITHUB_ENV
           sudo apt-get update -qq
           sudo apt-get install --yes --no-install-recommends postgresql-client
+          echo "INSTALL_END_TIME=$(date +%s)" >> $GITHUB_ENV
         shell: bash
+
+      # Log the durations
+      - name: Print Durations
+        run: |
+          CACHE_DURATION=$((CACHE_END_TIME - START_TIME))
+          INSTALL_DURATION=$((INSTALL_END_TIME - INSTALL_START_TIME))
+          TOTAL_DURATION=$((INSTALL_END_TIME - START_TIME))
+
+          echo "Cache step duration: ${CACHE_DURATION}s"
+          echo "Install step duration: ${INSTALL_DURATION}s"
+          echo "Total job duration: ${TOTAL_DURATION}s"
+
 
       - name: Create schemas
         shell: bash
