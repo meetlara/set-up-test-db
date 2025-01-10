@@ -79,9 +79,10 @@ runs:
         with:
           path: /usr/lib/postgresql
           key: ${{ runner.os }}-postgresql-client
+
       # Install step: installs PostgreSQL only if it's not found in the cache
       - name: Install PostgreSQL Client
-        if: steps.cache-psql.outputs.cache-hit != 'true' || !command -v psql
+        if: steps.cache-psql.outputs.cache-hit != 'true' 
         run: |
           sudo apt-get update -qq
           sudo apt-get install --yes --no-install-recommends postgresql-client
