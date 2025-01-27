@@ -91,7 +91,7 @@ runs:
           done
 
       - name: Cache Flyway binary
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: cache-flyway
         with:
           path: flyway-8.5.11
