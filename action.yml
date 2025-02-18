@@ -72,7 +72,7 @@ runs:
           app_user: "${{ inputs.db_user }}"
           app_user_password: "${{ inputs.db_password }}"
           app_db: "${{ inputs.db_name }}"
-          postgres_extensions: "${{ inputs.db_extensions }}"
+          postgres_extensions: vector
   
       - name: Install psql
         run: |
