@@ -59,22 +59,6 @@ inputs:
     description: Migrate the service itself before (chat, employee, case, dashboard, last)
     required: false
     default: "last"
-    
-services:
-  database:
-    image: pgvector/pgvector:0.7.0-pg12
-    env:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: all_services_test
-      POSTGRES_PORT: 5432
-    ports:
-      - "5432:5432"
-    options: >-
-      --health-cmd pg_isready
-      --health-interval 10s
-      --health-timeout 5s
-      --health-retries 5
 
 runs:
   using: "composite"
