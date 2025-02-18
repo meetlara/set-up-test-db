@@ -59,24 +59,26 @@ inputs:
     description: Migrate the service itself before (chat, employee, case, dashboard, last)
     required: false
     default: "last"
+    
+services:
+  database:
+    image: pgvector/pgvector:0.7.0-pg12
+    env:
+      POSTGRES_USER: "${{ inputs.db_user }}"
+      POSTGRES_PASSWORD: "${{ inputs.db_password }}"
+      POSTGRES_DB: "${{ inputs.db_name }}"
+      POSTGRES_PORT: 5432
+    ports:
+      - "5432:${{ inputs.db_port }}"
+    options: >-
+      --health-cmd pg_isready
+      --health-interval 10s
+      --health-timeout 5s
+      --health-retries 5
 
 runs:
   using: "composite"
-  services:
-    database:
-      image: pgvector/pgvector:0.7.0-pg12
-      env:
-        POSTGRES_USER: "${{ inputs.db_user }}"
-        POSTGRES_PASSWORD: "${{ inputs.db_password }}"
-        POSTGRES_DB: "${{ inputs.db_name }}"
-        POSTGRES_PORT: 5432
-      ports:
-        - "5432:${{ inputs.db_port }}"
-      options: >-
-        --health-cmd pg_isready
-        --health-interval 10s
-        --health-timeout 5s
-        --health-retries 5
+ 
   steps:
       - name: Install psql
         run: |
