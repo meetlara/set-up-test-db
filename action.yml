@@ -68,6 +68,11 @@ runs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install --yes --no-install-recommends postgresql-client
+
+          until pg_isready -h localhost -U ${{ inputs.db_user }} -d ${{ inputs.db_name }}; do
+            echo "Waiting for database..."
+            sleep 2
+          done
         shell: bash
 
       - name: Create schemas
