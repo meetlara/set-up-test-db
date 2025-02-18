@@ -20,7 +20,7 @@ inputs:
   db_extensions:
     description: DB extensions list separated by a space
     required: false
-    default: uuid-ossp
+    default: uuid-ossp vector
   db_schemas:
     description: DB schemas list to create separated by a space
     required: false
@@ -72,7 +72,7 @@ runs:
           app_user: "${{ inputs.db_user }}"
           app_user_password: "${{ inputs.db_password }}"
           app_db: "${{ inputs.db_name }}"
-          postgres_extensions: vector
+          postgres_extensions: "${{ inputs.db_extensions }}"
   
       - name: Install psql
         run: |
