@@ -64,9 +64,9 @@ services:
   database:
     image: pgvector/pgvector:0.7.0-pg12
     env:
-      POSTGRES_USER: "${{ inputs.db_user }}"
-      POSTGRES_PASSWORD: "${{ inputs.db_password }}"
-      POSTGRES_DB: "${{ inputs.db_name }}"
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: all_services_test
       POSTGRES_PORT: 5432
     ports:
       - "5432:${{ inputs.db_port }}"
