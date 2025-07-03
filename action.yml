@@ -262,5 +262,5 @@ runs:
             -user=admin \
             -password=admin \
             -locations=clerk-service/${{ inputs.db_migrations_path }} \
-            -configFiles=chat-service/db/test/conf/clerk_flyway.conf
+            -configFiles=chat-service/db/test/conf/flyway_clerk.conf
 
