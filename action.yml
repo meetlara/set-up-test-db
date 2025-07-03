@@ -243,7 +243,8 @@ runs:
             -password=${{ inputs.db_password }} \
             -locations=${{ inputs.db_migrations_path }} \
             -configFiles=${{ inputs.db_migrations_config_path }}
-      # Migrate employee service
+      
+      # Migrate clerk service
       - name: Copy migrations from clerk-service
         uses: actions/checkout@v3
         if: inputs.migrate_clerk == 'true'
