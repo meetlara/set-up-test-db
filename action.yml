@@ -243,4 +243,23 @@ runs:
             -password=${{ inputs.db_password }} \
             -locations=${{ inputs.db_migrations_path }} \
             -configFiles=${{ inputs.db_migrations_config_path }}
+      # Migrate employee service
+      - name: Copy migrations from clerk-service
+        uses: actions/checkout@v3
+        if: inputs.migrate_clerk == 'true'
+        with:
+          repository: 'meetlara/clerk-service'
+          ref: 'main'
+          token: ${{ inputs.github_token }} 
+          path: clerk-service
+      - name: Make clerk migrations
+        shell: bash
+        id: make-clerk-migrations
+        if: inputs.migrate_clerk == 'true'
+        run: |
+          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
+            -user=admin \
+            -password=admin \
+            -locations=clerk-service/${{ inputs.db_migrations_path }} \
+            -configFiles=clerk-service/${{ inputs.db_migrations_config_path }}
 
