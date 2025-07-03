@@ -51,6 +51,18 @@ inputs:
     description: Migrate dashboard service
     required: false
     default: "false"
+  migrate_notification:
+    description: Migrate dashboard service
+    required: false
+    default: "false"
+  migrate_scheduler:
+    description: Migrate dashboard service
+    required: false
+    default: "false"
+  migrate_ticket:
+    description: Migrate dashboard service
+    required: false
+    default: "false"
   migrate_self:
     description: Migrate the service itself
     required: false
@@ -200,6 +212,67 @@ runs:
             -password=admin \
             -locations=case-service/${{ inputs.db_migrations_path }} \
             -configFiles=case-service/${{ inputs.db_migrations_config_path }}
+
+       # Migrate tickets service
+      - name: Copy migrations from tickets
+        uses: actions/checkout@v3
+        if: inputs.migrate_ticket == 'true'
+        with:
+          repository: 'meetlara/ticket-service'
+          ref: 'main'
+          token: ${{ inputs.github_token }} 
+          path: ticket-service
+      - name: Make ticket migrations
+        shell: bash
+        id: make-ticket-migrations
+        if: inputs.migrate_ticket == 'true'
+        run: |
+          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
+            -user=admin \
+            -password=admin \
+            -locations=ticket-service/${{ inputs.db_migrations_path }} \
+            -configFiles=ticket-service/${{ inputs.db_migrations_config_path }}
+
+      # Migrate scheduler service
+      - name: Copy migrations from scheduler
+        uses: actions/checkout@v3
+        if: inputs.migrate_scheduler == 'true'
+        with:
+          repository: 'meetlara/scheduler-service'
+          ref: 'main'
+          token: ${{ inputs.github_token }} 
+          path: scheduler-service
+      - name: Make scheduler migrations
+        shell: bash
+        id: make-scheduler-migrations
+        if: inputs.migrate_scheduler == 'true'
+        run: |
+          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
+            -user=admin \
+            -password=admin \
+            -locations=scheduler-service/${{ inputs.db_migrations_path }} \
+            -configFiles=scheduler-service/${{ inputs.db_migrations_config_path }}
+
+       # Migrate notification service
+      - name: Copy migrations from notification
+        uses: actions/checkout@v3
+        if: inputs.migrate_notification == 'true'
+        with:
+          repository: 'meetlara/notification-service'
+          ref: 'main'
+          token: ${{ inputs.github_token }} 
+          path: notification-service
+      - name: Make notification migrations
+        shell: bash
+        id: make-notification-migrations
+        if: inputs.migrate_notification == 'true'
+        run: |
+          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
+            -user=admin \
+            -password=admin \
+            -locations=notification-service/${{ inputs.db_migrations_path }} \
+            -configFiles=notification-service/${{ inputs.db_migrations_config_path }} 
+
 
       - name: Make migrations before dashboard
         shell: bash
