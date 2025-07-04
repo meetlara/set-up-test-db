@@ -20,7 +20,7 @@ inputs:
   db_extensions:
     description: DB extensions list separated by a space
     required: false
-    default: uuid-ossp vector
+    default: uuid-ossp vector pg_trgm fuzzystrmatch
   db_schemas:
     description: DB schemas list to create separated by a space
     required: false
