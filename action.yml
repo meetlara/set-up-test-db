@@ -108,6 +108,37 @@ runs:
         shell: bash
         run: sudo ln -s `pwd`/flyway-8.5.11/flyway /usr/local/bin
 
+      - name: Make migrations before clerk
+        shell: bash
+        id: make-migrations-before-clerk
+        if: inputs.migrate_self == 'true' && inputs.migrate_self_before == 'clerk'
+        run: |
+          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
+            -user=${{ inputs.db_user }} \
+            -password=${{ inputs.db_password }} \
+            -locations=${{ inputs.db_migrations_path }} \
+            -configFiles=${{ inputs.db_migrations_config_path }}
+
+      # Migrate clerk service
+      - name: Copy migrations from clerk-service
+        uses: actions/checkout@v3
+        if: inputs.migrate_clerk == 'true'
+        with:
+          repository: 'meetlara/clerk-service'
+          ref: 'main'
+          token: ${{ inputs.github_token }} 
+          path: clerk-service
+      - name: Make clerk migrations
+        shell: bash
+        id: make-clerk-migrations
+        if: inputs.migrate_clerk == 'true'
+        run: |
+          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
+            -user=admin \
+            -password=admin \
+            -locations=clerk-service/${{ inputs.db_migrations_path }} \
+            -configFiles=clerk-service/${{ inputs.db_migrations_config_path }}
+
       - name: Make migrations before chat
         shell: bash
         id: make-migrations-before-chat
@@ -118,7 +149,7 @@ runs:
             -password=${{ inputs.db_password }} \
             -locations=${{ inputs.db_migrations_path }} \
             -configFiles=${{ inputs.db_migrations_config_path }}
-
+            
       # Migrate chat service
       - name: Copy migrations from chat
         uses: actions/checkout@v3
@@ -243,23 +274,3 @@ runs:
             -password=${{ inputs.db_password }} \
             -locations=${{ inputs.db_migrations_path }} \
             -configFiles=${{ inputs.db_migrations_config_path }}
-      
-      # Migrate clerk service
-      - name: Copy migrations from clerk-service
-        uses: actions/checkout@v3
-        if: inputs.migrate_clerk == 'true'
-        with:
-          repository: 'meetlara/clerk-service'
-          ref: 'main'
-          token: ${{ inputs.github_token }} 
-          path: clerk-service
-      - name: Make clerk migrations
-        shell: bash
-        id: make-clerk-migrations
-        if: inputs.migrate_clerk == 'true'
-        run: |
-          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
-            -user=admin \
-            -password=admin \
-            -locations=clerk-service/${{ inputs.db_migrations_path }} \
-            -configFiles=clerk-service/${{ inputs.db_migrations_config_path }}
