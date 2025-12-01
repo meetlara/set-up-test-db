@@ -286,7 +286,7 @@ runs:
             -user=admin \
             -password=admin \
             -locations=file-employee-integration-service/${{ inputs.db_migrations_path }} \
-            -configFiles=ticket-service/${{ inputs.db_migrations_config_path }}
+            -configFiles=file-employee-integration-service/${{ inputs.db_migrations_config_path }}
      
       # Migrate scheduler service
       - name: Copy migrations from scheduler
