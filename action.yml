@@ -63,6 +63,10 @@ inputs:
     description: Migrate dashboard service
     required: false
     default: "false"
+  migrate_file:
+    description: Migrate file service
+    required: false
+    default: "false"
   migrate_self:
     description: Migrate the service itself
     required: false
@@ -263,7 +267,27 @@ runs:
             -password=admin \
             -locations=ticket-service/${{ inputs.db_migrations_path }} \
             -configFiles=ticket-service/${{ inputs.db_migrations_config_path }}
-
+      
+      # Migrate file service
+      - name: Copy migrations from file
+        uses: actions/checkout@v3
+        if: inputs.migrate_file == 'true'
+        with:
+          repository: "meetlara/file-employee-integration-service"
+          ref: "main"
+          token: ${{ inputs.github_token }}
+          path: file-employee-integration-service
+      - name: Make file migrations
+        shell: bash
+        id: make-file-migrations
+        if: inputs.migrate_file == 'true'
+        run: |
+          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
+            -user=admin \
+            -password=admin \
+            -locations=file-employee-integration-service/${{ inputs.db_migrations_path }} \
+            -configFiles=ticket-service/${{ inputs.db_migrations_config_path }}
+     
       # Migrate scheduler service
       - name: Copy migrations from scheduler
         uses: actions/checkout@v3
