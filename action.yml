@@ -81,7 +81,7 @@ runs:
  
   steps:
       - name: Setup Postgres database
-        uses: Daniel-Marynicz/postgresql-action@master
+        uses: Daniel-Marynicz/postgresql-action@fcac9ac7d2db5031132953bc7cfe88f77a65badc
         with:
           postgres_image_tag: 0.7.0-pg12
           postgres_image_name: pgvector/pgvector
