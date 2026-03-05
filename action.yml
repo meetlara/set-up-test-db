@@ -138,7 +138,7 @@ runs:
       # Migrate clerk service
       - name: Copy migrations from clerk-service
         uses: actions/checkout@v3
-        if: inputs.migrate_clerk == 'true' || inputs.migrate_chat == 'true' 
+        if: inputs.migrate_clerk == 'true'
         with:
           repository: 'meetlara/clerk-service'
           ref: 'main'
