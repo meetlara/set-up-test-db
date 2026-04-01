@@ -148,12 +148,17 @@ runs:
         shell: bash
         id: make-clerk-migrations
         if: inputs.migrate_clerk == 'true'
+        env:
+          DB_PORT: ${{ inputs.db_port }}
+          DB_NAME: ${{ inputs.db_name }}
+          DB_MIGRATIONS_PATH: ${{ inputs.db_migrations_path }}
+          DB_MIGRATIONS_CONFIG_PATH: ${{ inputs.db_migrations_config_path }}
         run: |
-          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
+          flyway migrate -url=jdbc:postgresql://localhost:$DB_PORT/$DB_NAME \
             -user=admin \
             -password=admin \
-            -locations=clerk-service/${{ inputs.db_migrations_path }} \
-            -configFiles=clerk-service/${{ inputs.db_migrations_config_path }}
+            -locations=clerk-service/$DB_MIGRATIONS_PATH \
+            -configFiles=clerk-service/$DB_MIGRATIONS_CONFIG_PATH
 
       - name: Make migrations before chat
         shell: bash
