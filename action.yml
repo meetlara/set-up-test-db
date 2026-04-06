@@ -100,9 +100,15 @@ runs:
         shell: bash
         id: create-schemas
         if: inputs.db_schemas != ''
+        env:
+          DB_SCHEMAS: ${{ inputs.db_schemas }}
+          DB_USER: ${{ inputs.db_user }}
+          DB_PASSWORD: ${{ inputs.db_password }}
+          DB_PORT: ${{ inputs.db_port }}
+          DB_NAME: ${{ inputs.db_name }}
         run: |
-          IFS=' ' read -r -a schemas <<< "${{ inputs.db_schemas }}"
-          connection_string="postgres://${{ inputs.db_user }}:${{ inputs.db_password }}@localhost:${{ inputs.db_port }}/${{ inputs.db_name }}"
+          IFS=' ' read -r -a schemas <<< "$DB_SCHEMAS"
+          connection_string="postgres://$DB_USER:$DB_PASSWORD@localhost:$DB_PORT/$DB_NAME"
           for schema in "${schemas[@]}"
           do
             psql -d $connection_string -c "CREATE SCHEMA IF NOT EXISTS $schema;"
@@ -184,12 +190,17 @@ runs:
         shell: bash
         id: make-chat-migrations
         if: inputs.migrate_chat == 'true'
+        env:
+          DB_PORT: ${{ inputs.db_port }}
+          DB_NAME: ${{ inputs.db_name }}
+          DB_MIGRATIONS_PATH: ${{ inputs.db_migrations_path }}
+          DB_MIGRATIONS_CONFIG_PATH: ${{ inputs.db_migrations_config_path }}
         run: |
-          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
+          flyway migrate -url=jdbc:postgresql://localhost:$DB_PORT/$DB_NAME \
             -user=admin \
             -password=admin \
-            -locations=chat-service/${{ inputs.db_migrations_path }} \
-            -configFiles=chat-service/${{ inputs.db_migrations_config_path }}
+            -locations=chat-service/$DB_MIGRATIONS_PATH \
+            -configFiles=chat-service/$DB_MIGRATIONS_CONFIG_PATH
 
       - name: Make migrations before employee
         shell: bash
@@ -231,12 +242,19 @@ runs:
         shell: bash
         id: make-migrations-before-case
         if: inputs.migrate_self == 'true' && inputs.migrate_self_before == 'case'
+        env:
+          DB_PORT: ${{ inputs.db_port }}
+          DB_NAME: ${{ inputs.db_name }}
+          DB_USER: ${{ inputs.db_user }}
+          DB_PASSWORD: ${{ inputs.db_password }}
+          DB_MIGRATIONS_PATH: ${{ inputs.db_migrations_path }}
+          DB_MIGRATIONS_CONFIG_PATH: ${{ inputs.db_migrations_config_path }}
         run: |
-          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
-            -user=${{ inputs.db_user }} \
-            -password=${{ inputs.db_password }} \
-            -locations=${{ inputs.db_migrations_path }} \
-            -configFiles=${{ inputs.db_migrations_config_path }}
+          flyway migrate -url=jdbc:postgresql://localhost:$DB_PORT/$DB_NAME \
+            -user=$DB_USER \
+            -password=$DB_PASSWORD \
+            -locations=$DB_MIGRATIONS_PATH \
+            -configFiles=$DB_MIGRATIONS_CONFIG_PATH
 
       # Migrate case service
       - name: Copy migrations from cases
@@ -276,12 +294,17 @@ runs:
         shell: bash
         id: make-ticket-migrations
         if: inputs.migrate_ticket == 'true'
+        env:
+          DB_PORT: ${{ inputs.db_port }}
+          DB_NAME: ${{ inputs.db_name }}
+          DB_MIGRATIONS_PATH: ${{ inputs.db_migrations_path }}
+          DB_MIGRATIONS_CONFIG_PATH: ${{ inputs.db_migrations_config_path }}
         run: |
-          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
+          flyway migrate -url=jdbc:postgresql://localhost:$DB_PORT/$DB_NAME \
             -user=admin \
             -password=admin \
-            -locations=ticket-service/${{ inputs.db_migrations_path }} \
-            -configFiles=ticket-service/${{ inputs.db_migrations_config_path }}
+            -locations=ticket-service/$DB_MIGRATIONS_PATH \
+            -configFiles=ticket-service/$DB_MIGRATIONS_CONFIG_PATH
       
       # Migrate file service
       - name: Copy migrations from file
@@ -346,12 +369,17 @@ runs:
         shell: bash
         id: make-notification-migrations
         if: inputs.migrate_notification == 'true'
+        env:
+          DB_PORT: ${{ inputs.db_port }}
+          DB_NAME: ${{ inputs.db_name }}
+          DB_MIGRATIONS_PATH: ${{ inputs.db_migrations_path }}
+          DB_MIGRATIONS_CONFIG_PATH: ${{ inputs.db_migrations_config_path }}
         run: |
-          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
+          flyway migrate -url=jdbc:postgresql://localhost:$DB_PORT/$DB_NAME \
             -user=admin \
             -password=admin \
-            -locations=notification-service/${{ inputs.db_migrations_path }} \
-            -configFiles=notification-service/${{ inputs.db_migrations_config_path }} 
+            -locations=notification-service/$DB_MIGRATIONS_PATH \
+            -configFiles=notification-service/$DB_MIGRATIONS_CONFIG_PATH 
 
 
       - name: Make migrations before dashboard
