@@ -286,12 +286,17 @@ runs:
         shell: bash
         id: make-file-migrations
         if: inputs.migrate_file == 'true'
+        env:
+          DB_PORT: ${{ inputs.db_port }}
+          DB_NAME: ${{ inputs.db_name }}
+          DB_MIGRATIONS_PATH: ${{ inputs.db_migrations_path }}
+          DB_MIGRATIONS_CONFIG_PATH: ${{ inputs.db_migrations_config_path }}
         run: |
-          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
+          flyway migrate -url=jdbc:postgresql://localhost:$DB_PORT/$DB_NAME \
             -user=admin \
             -password=admin \
-            -locations=file-employee-integration-service/${{ inputs.db_migrations_path }} \
-            -configFiles=file-employee-integration-service/${{ inputs.db_migrations_config_path }}
+            -locations=file-employee-integration-service/$DB_MIGRATIONS_PATH \
+            -configFiles=file-employee-integration-service/$DB_MIGRATIONS_CONFIG_PATH
      
       # Migrate scheduler service
       - name: Copy migrations from scheduler
