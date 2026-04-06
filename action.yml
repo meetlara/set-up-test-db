@@ -134,12 +134,19 @@ runs:
         shell: bash
         id: make-migrations-before-clerk
         if: inputs.migrate_self == 'true' && inputs.migrate_self_before == 'clerk'
+        env:
+          DB_PORT: ${{ inputs.db_port }}
+          DB_NAME: ${{ inputs.db_name }}
+          DB_USER: ${{ inputs.db_user }}
+          DB_PASSWORD: ${{ inputs.db_password }}
+          DB_MIGRATIONS_PATH: ${{ inputs.db_migrations_path }}
+          DB_MIGRATIONS_CONFIG_PATH: ${{ inputs.db_migrations_config_path }}
         run: |
-          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
-            -user=${{ inputs.db_user }} \
-            -password=${{ inputs.db_password }} \
-            -locations=${{ inputs.db_migrations_path }} \
-            -configFiles=${{ inputs.db_migrations_config_path }}
+          flyway migrate -url=jdbc:postgresql://localhost:$DB_PORT/$DB_NAME \
+            -user=$DB_USER \
+            -password=$DB_PASSWORD \
+            -locations=$DB_MIGRATIONS_PATH \
+            -configFiles=$DB_MIGRATIONS_CONFIG_PATH
 
       # Migrate clerk service
       - name: Copy migrations from clerk-service
@@ -170,12 +177,19 @@ runs:
         shell: bash
         id: make-migrations-before-chat
         if: inputs.migrate_self == 'true' && inputs.migrate_self_before == 'chat'
+        env:
+          DB_PORT: ${{ inputs.db_port }}
+          DB_NAME: ${{ inputs.db_name }}
+          DB_USER: ${{ inputs.db_user }}
+          DB_PASSWORD: ${{ inputs.db_password }}
+          DB_MIGRATIONS_PATH: ${{ inputs.db_migrations_path }}
+          DB_MIGRATIONS_CONFIG_PATH: ${{ inputs.db_migrations_config_path }}
         run: |
-          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
-            -user=${{ inputs.db_user }} \
-            -password=${{ inputs.db_password }} \
-            -locations=${{ inputs.db_migrations_path }} \
-            -configFiles=${{ inputs.db_migrations_config_path }}
+          flyway migrate -url=jdbc:postgresql://localhost:$DB_PORT/$DB_NAME \
+            -user=$DB_USER \
+            -password=$DB_PASSWORD \
+            -locations=$DB_MIGRATIONS_PATH \
+            -configFiles=$DB_MIGRATIONS_CONFIG_PATH
             
       # Migrate chat service
       - name: Copy migrations from chat
@@ -206,12 +220,19 @@ runs:
         shell: bash
         id: make-migrations-before-employee
         if: inputs.migrate_self == 'true' && inputs.migrate_self_before == 'employee'
+        env:
+          DB_PORT: ${{ inputs.db_port }}
+          DB_NAME: ${{ inputs.db_name }}
+          DB_USER: ${{ inputs.db_user }}
+          DB_PASSWORD: ${{ inputs.db_password }}
+          DB_MIGRATIONS_PATH: ${{ inputs.db_migrations_path }}
+          DB_MIGRATIONS_CONFIG_PATH: ${{ inputs.db_migrations_config_path }}
         run: |
-          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
-            -user=${{ inputs.db_user }} \
-            -password=${{ inputs.db_password }} \
-            -locations=${{ inputs.db_migrations_path }} \
-            -configFiles=${{ inputs.db_migrations_config_path }}
+          flyway migrate -url=jdbc:postgresql://localhost:$DB_PORT/$DB_NAME \
+            -user=$DB_USER \
+            -password=$DB_PASSWORD \
+            -locations=$DB_MIGRATIONS_PATH \
+            -configFiles=$DB_MIGRATIONS_CONFIG_PATH
 
       # Migrate employee service
       - name: Copy migrations from employee-service
