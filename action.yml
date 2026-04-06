@@ -321,12 +321,17 @@ runs:
         shell: bash
         id: make-scheduler-migrations
         if: inputs.migrate_scheduler == 'true'
+        env:
+          DB_PORT: ${{ inputs.db_port }}
+          DB_NAME: ${{ inputs.db_name }}
+          DB_MIGRATIONS_PATH: ${{ inputs.db_migrations_path }}
+          DB_MIGRATIONS_CONFIG_PATH: ${{ inputs.db_migrations_config_path }}
         run: |
-          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
+          flyway migrate -url=jdbc:postgresql://localhost:$DB_PORT/$DB_NAME \
             -user=admin \
             -password=admin \
-            -locations=scheduler-service/${{ inputs.db_migrations_path }} \
-            -configFiles=scheduler-service/${{ inputs.db_migrations_config_path }}
+            -locations=scheduler-service/$DB_MIGRATIONS_PATH \
+            -configFiles=scheduler-service/$DB_MIGRATIONS_CONFIG_PATH
 
        # Migrate notification service
       - name: Copy migrations from notification
