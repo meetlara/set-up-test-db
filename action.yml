@@ -386,12 +386,19 @@ runs:
         shell: bash
         id: make-migrations-before-dashboard
         if: inputs.migrate_self == 'true' && inputs.migrate_self_before == 'dashboard'
+        env:
+          DB_PORT: ${{ inputs.db_port }}
+          DB_NAME: ${{ inputs.db_name }}
+          DB_USER: ${{ inputs.db_user }}
+          DB_PASSWORD: ${{ inputs.db_password }}
+          DB_MIGRATIONS_PATH: ${{ inputs.db_migrations_path }}
+          DB_MIGRATIONS_CONFIG_PATH: ${{ inputs.db_migrations_config_path }}
         run: |
-          flyway migrate -url=jdbc:postgresql://localhost:${{ inputs.db_port }}/${{ inputs.db_name }} \
-            -user=${{ inputs.db_user }} \
-            -password=${{ inputs.db_password }} \
-            -locations=${{ inputs.db_migrations_path }} \
-            -configFiles=${{ inputs.db_migrations_config_path }}
+          flyway migrate -url=jdbc:postgresql://localhost:$DB_PORT/$DB_NAME \
+            -user=$DB_USER \
+            -password=$DB_PASSWORD \
+            -locations=$DB_MIGRATIONS_PATH \
+            -configFiles=$DB_MIGRATIONS_CONFIG_PATH
 
       # Migrate dashboard service
       - name: Copy migrations from dashboard
