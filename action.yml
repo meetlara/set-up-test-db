@@ -75,6 +75,14 @@ inputs:
     description: Migrate the service itself before (chat, employee, case, dashboard, last)
     required: false
     default: "last"
+  postgres_image_name:
+    description: Postgres image name. Override to use a pre-migrated image instead of the default.
+    required: false
+    default: "pgvector/pgvector"
+  postgres_image_tag:
+    description: Postgres image tag.
+    required: false
+    default: "0.8.2-pg16"
 
 runs:
   using: "composite"
@@ -83,8 +91,8 @@ runs:
       - name: Setup Postgres database
         uses: meetlara/postgresql-action@2.0.0
         with:
-          postgres_image_tag: 0.8.2-pg16
-          postgres_image_name: pgvector/pgvector
+          postgres_image_tag: "${{ inputs.postgres_image_tag }}"
+          postgres_image_name: "${{ inputs.postgres_image_name }}"
           app_user: "${{ inputs.db_user }}"
           app_user_password: "${{ inputs.db_password }}"
           app_db: "${{ inputs.db_name }}"
