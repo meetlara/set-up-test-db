@@ -1,0 +1,35 @@
+name: Build test-db base image
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["feat/test-db-base-image"]
+    paths:
+      - "Dockerfile"
+      - ".github/workflows/build-base-image.yaml"
+
+jobs:
+  build:
+    name: Build & push to GHCR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/meetlara/test-db-base:pg16-fw8
+            ghcr.io/meetlara/test-db-base:latest
