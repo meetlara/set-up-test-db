@@ -10,26 +10,32 @@ on:
 
 jobs:
   build:
-    name: Build & push to GHCR
+    name: Build & push to ECR
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     steps:
       - uses: actions/checkout@v6
 
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: |
-            ghcr.io/meetlara/test-db-base:pg16-fw8
-            ghcr.io/meetlara/test-db-base:latest
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Ensure ECR repo exists
+        run: |
+          aws ecr describe-repositories --repository-names test-db-base \
+            || aws ecr create-repository --repository-name test-db-base
+
+      - name: Build and push to ECR
+        env:
+          ECR: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          docker build -t "$ECR/test-db-base:pg16-fw8" -t "$ECR/test-db-base:latest" .
+          docker push "$ECR/test-db-base:pg16-fw8"
+          docker push "$ECR/test-db-base:latest"
+          echo "Pushed: $ECR/test-db-base:pg16-fw8"
