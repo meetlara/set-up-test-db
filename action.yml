@@ -75,12 +75,23 @@ inputs:
     description: Migrate the service itself before (chat, employee, case, dashboard, last)
     required: false
     default: "last"
+  base_image:
+    description: >-
+      OPT-IN. Si se setea, en vez de postgresql-action + instalar psql/flyway en el runner,
+      corre postgres desde esta imagen pre-horneada (pgvector + flyway + psql) y expone shims
+      de flyway/psql que hacen `docker exec` al container, dejando el resto del flujo (schemas
+      + migraciones) idéntico. El consumidor debe estar autenticado contra el registry (p.ej.
+      correr amazon-ecr-login antes) para poder pullear la imagen.
+    required: false
+    default: ""
 
 runs:
   using: "composite"
  
   steps:
+      # --- Modo default: postgresql-action + tooling instalado en el runner ---
       - name: Setup Postgres database
+        if: inputs.base_image == ''
         uses: meetlara/postgresql-action@2.0.0
         with:
           postgres_image_tag: 0.8.2-pg16
@@ -89,12 +100,59 @@ runs:
           app_user_password: "${{ inputs.db_password }}"
           app_db: "${{ inputs.db_name }}"
           postgres_extensions: "${{ inputs.db_extensions }}"
-  
+
       - name: Install psql
+        if: inputs.base_image == ''
         run: |
           sudo apt-get update -qq
           sudo apt-get install --yes --no-install-recommends postgresql-client
         shell: bash
+
+      # --- Modo opt-in: postgres desde imagen base pre-horneada (pgvector + flyway + psql) ---
+      # Corre postgres con docker run, crea las extensions, y deja shims de flyway/psql en el
+      # PATH que hacen `docker exec` al container. Así los steps de schemas/migraciones de abajo
+      # no cambian: siguen llamando `flyway`/`psql` con paths relativos al workspace (montado en
+      # el container en la misma ruta) y -url a localhost (que dentro del container es el postgres).
+      - name: Setup Postgres from base image
+        if: inputs.base_image != ''
+        shell: bash
+        env:
+          BASE_IMAGE: ${{ inputs.base_image }}
+          DB_USER: ${{ inputs.db_user }}
+          DB_PASSWORD: ${{ inputs.db_password }}
+          DB_NAME: ${{ inputs.db_name }}
+          DB_PORT: ${{ inputs.db_port }}
+          DB_EXTENSIONS: ${{ inputs.db_extensions }}
+        run: |
+          set -euo pipefail
+          docker run -d --name lara-testdb \
+            -e POSTGRES_USER="$DB_USER" \
+            -e POSTGRES_PASSWORD="$DB_PASSWORD" \
+            -e POSTGRES_DB="$DB_NAME" \
+            -v "$GITHUB_WORKSPACE":"$GITHUB_WORKSPACE" \
+            -p "$DB_PORT":5432 \
+            "$BASE_IMAGE"
+
+          echo "Esperando postgres..."
+          for i in $(seq 1 30); do
+            if docker exec lara-testdb pg_isready -U "$DB_USER" -d "$DB_NAME" >/dev/null 2>&1; then
+              echo "postgres listo"; break
+            fi
+            sleep 1
+          done
+
+          # Extensions (postgresql-action las crea en modo default; acá lo hacemos a mano)
+          for ext in $DB_EXTENSIONS; do
+            docker exec lara-testdb psql -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 \
+              -c "CREATE EXTENSION IF NOT EXISTS \"$ext\";"
+          done
+
+          # Shims: flyway/psql del PATH -> docker exec al container, con cwd = workspace
+          # (montado en la misma ruta) para que los paths relativos de los steps resuelvan igual.
+          # Se usan printf (no heredoc) para no arrastrar la indentación del YAML al script.
+          printf '%s\n' '#!/usr/bin/env bash' "exec docker exec -w \"$GITHUB_WORKSPACE\" lara-testdb flyway \"\$@\"" | sudo tee /usr/local/bin/flyway >/dev/null
+          printf '%s\n' '#!/usr/bin/env bash' "exec docker exec -e PGPASSWORD=\"$DB_PASSWORD\" -w \"$GITHUB_WORKSPACE\" lara-testdb psql \"\$@\"" | sudo tee /usr/local/bin/psql >/dev/null
+          sudo chmod +x /usr/local/bin/flyway /usr/local/bin/psql
 
       - name: Create schemas
         shell: bash
@@ -115,6 +173,7 @@ runs:
           done
 
       - name: Cache Flyway binary
+        if: inputs.base_image == ''
         uses: actions/cache@v4
         id: cache-flyway
         with:
@@ -122,11 +181,12 @@ runs:
           key: flyway-8.5.11-linux-x64
 
       - name: Install Flyway (if not cached)
-        if: steps.cache-flyway.outputs.cache-hit != 'true'
+        if: inputs.base_image == '' && steps.cache-flyway.outputs.cache-hit != 'true'
         shell: bash
         run: wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/8.5.11/flyway-commandline-8.5.11-linux-x64.tar.gz | tar xvz
 
       - name: Configure Flyway
+        if: inputs.base_image == ''
         shell: bash
         run: sudo ln -s `pwd`/flyway-8.5.11/flyway /usr/local/bin
 
