@@ -3,7 +3,7 @@ name: Build test-db base image
 on:
   workflow_dispatch:
   push:
-    branches: ["feat/test-db-base-image"]
+    branches: ["main"]
     paths:
       - "Dockerfile"
       - ".github/workflows/build-base-image.yaml"
