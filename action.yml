@@ -75,49 +75,45 @@ inputs:
     description: Migrate the service itself before (chat, employee, case, dashboard, last)
     required: false
     default: "last"
-  base_image:
-    description: >-
-      OPT-IN. Si se setea, en vez de postgresql-action + instalar psql/flyway en el runner,
-      corre postgres desde esta imagen pre-horneada (pgvector + flyway + psql) y expone shims
-      de flyway/psql que hacen `docker exec` al container, dejando el resto del flujo (schemas
-      + migraciones) idéntico. El consumidor debe estar autenticado contra el registry (p.ej.
-      correr amazon-ecr-login antes) para poder pullear la imagen.
+  aws_access_key_id:
+    description: AWS Key ID (para pullear la imagen base de ECR). Requerido en v2.
+    required: true
+  aws_secret_access_key:
+    description: AWS Secret Access Key. Requerido en v2.
+    required: true
+  aws_region:
+    description: AWS region del ECR
     required: false
-    default: ""
+    default: us-east-1
+  base_image_name:
+    description: Nombre:tag de la imagen base en ECR
+    required: false
+    default: "test-db-base:pg16-fw8"
 
 runs:
   using: "composite"
  
   steps:
-      # --- Modo default: postgresql-action + tooling instalado en el runner ---
-      - name: Setup Postgres database
-        if: inputs.base_image == ''
-        uses: meetlara/postgresql-action@2.0.0
+      # v2: postgres SIEMPRE desde la imagen base pre-horneada en ECR (pgvector+flyway+psql).
+      # Autentica a ECR acá adentro con las AWS creds que pasa el consumidor (así no necesita
+      # correr amazon-ecr-login ni pasar base_image). Corre postgres con docker run, crea las
+      # extensions, y deja shims de flyway/psql (docker exec al container) para que los steps de
+      # schemas/migraciones de abajo no cambien.
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
         with:
-          postgres_image_tag: 0.8.2-pg16
-          postgres_image_name: pgvector/pgvector
-          app_user: "${{ inputs.db_user }}"
-          app_user_password: "${{ inputs.db_password }}"
-          app_db: "${{ inputs.db_name }}"
-          postgres_extensions: "${{ inputs.db_extensions }}"
+          aws-access-key-id: ${{ inputs.aws_access_key_id }}
+          aws-secret-access-key: ${{ inputs.aws_secret_access_key }}
+          aws-region: ${{ inputs.aws_region }}
 
-      - name: Install psql
-        if: inputs.base_image == ''
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install --yes --no-install-recommends postgresql-client
-        shell: bash
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
-      # --- Modo opt-in: postgres desde imagen base pre-horneada (pgvector + flyway + psql) ---
-      # Corre postgres con docker run, crea las extensions, y deja shims de flyway/psql en el
-      # PATH que hacen `docker exec` al container. Así los steps de schemas/migraciones de abajo
-      # no cambian: siguen llamando `flyway`/`psql` con paths relativos al workspace (montado en
-      # el container en la misma ruta) y -url a localhost (que dentro del container es el postgres).
       - name: Setup Postgres from base image
-        if: inputs.base_image != ''
         shell: bash
         env:
-          BASE_IMAGE: ${{ inputs.base_image }}
+          BASE_IMAGE: ${{ steps.login-ecr.outputs.registry }}/${{ inputs.base_image_name }}
           DB_USER: ${{ inputs.db_user }}
           DB_PASSWORD: ${{ inputs.db_password }}
           DB_NAME: ${{ inputs.db_name }}
@@ -172,23 +168,7 @@ runs:
             psql -d $connection_string -c "CREATE SCHEMA IF NOT EXISTS $schema;"
           done
 
-      - name: Cache Flyway binary
-        if: inputs.base_image == ''
-        uses: actions/cache@v4
-        id: cache-flyway
-        with:
-          path: flyway-8.5.11
-          key: flyway-8.5.11-linux-x64
-
-      - name: Install Flyway (if not cached)
-        if: inputs.base_image == '' && steps.cache-flyway.outputs.cache-hit != 'true'
-        shell: bash
-        run: wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/8.5.11/flyway-commandline-8.5.11-linux-x64.tar.gz | tar xvz
-
-      - name: Configure Flyway
-        if: inputs.base_image == ''
-        shell: bash
-        run: sudo ln -s `pwd`/flyway-8.5.11/flyway /usr/local/bin
+      # (v2 no instala flyway en el runner: viene del shim que apunta al container)
 
       - name: Make migrations before clerk
         shell: bash
