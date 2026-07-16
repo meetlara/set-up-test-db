@@ -7,19 +7,49 @@
 # en build time según los parámetros que mande, así que no hay staleness. Esta
 # imagen solo elimina el costo por-run de instalar flyway + tooling de cliente y
 # de buildear el wrapper de postgresql-action.
+#
+# Superficie de CVEs (Aikido): la imagen tenía ~90 findings, casi todos ruido que
+# no aplica a una DB de test efímera. Igual los recortamos en origen:
+#  1) flyway `-linux-x64` bundleaba AdoptOpenJDK 11.0.2 (ene-2019) + ~20 JDBC drivers
+#     de DBs que NO usamos (Oracle, MSSQL, Snowflake, BigQuery, Derby, H2, SQLite,
+#     MariaDB, Firebird...) + libs de auth Azure AD. Usamos el tarball SIN JRE (java
+#     de debian, parcheado), borramos TODOS los drivers salvo postgres y lo subimos
+#     a 42.7.x. Flyway queda 8.5.11 EXACTO → mismo comportamiento de migraciones.
+#  2) paquetes de debian bookworm viejos → `apt-get upgrade`.
+#  3) gosu (helper de privilege-drop de la imagen de postgres) venía compilado con
+#     un go/stdlib con CVEs → lo recompilamos con un toolchain de Go actual.
+
+# --- gosu recompilado con Go actual: el binario de la imagen base arrastra los CVEs
+#     del go/stdlib con el que se compiló; rebuildearlo los limpia sin cambiar gosu.
+FROM golang:1.26-bookworm AS gosu
+RUN CGO_ENABLED=0 go install -ldflags "-s -w" github.com/tianon/gosu@latest
+
 FROM pgvector/pgvector:0.8.2-pg16
 
-ENV FLYWAY_VERSION=8.5.11
+ENV FLYWAY_VERSION=8.5.11 \
+    PG_JDBC_VERSION=42.7.13
+
+COPY --from=gosu /go/bin/gosu /usr/local/bin/gosu
 
 RUN set -eux; \
     apt-get update; \
-    apt-get install -y --no-install-recommends wget ca-certificates; \
+    apt-get upgrade -y; \
+    apt-get install -y --no-install-recommends default-jre-headless ca-certificates wget; \
+    # flyway SIN jre embebido (usa el java de debian, que sí recibe security updates)
     wget -qO /tmp/flyway.tar.gz \
-      "https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/${FLYWAY_VERSION}/flyway-commandline-${FLYWAY_VERSION}-linux-x64.tar.gz"; \
+      "https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/${FLYWAY_VERSION}/flyway-commandline-${FLYWAY_VERSION}.tar.gz"; \
     mkdir -p /opt/flyway; \
     tar -xzf /tmp/flyway.tar.gz -C /opt/flyway --strip-components=1; \
-    ln -s /opt/flyway/flyway /usr/local/bin/flyway; \
     rm -f /tmp/flyway.tar.gz; \
+    ln -s /opt/flyway/flyway /usr/local/bin/flyway; \
+    # sólo migramos postgres: fuera TODOS los drivers y libs de auth de otras DBs
+    rm -rf /opt/flyway/drivers /opt/flyway/lib/aad /opt/flyway/lib/oracle_wallet; \
+    mkdir -p /opt/flyway/drivers; \
+    wget -qO "/opt/flyway/drivers/postgresql-${PG_JDBC_VERSION}.jar" \
+      "https://repo1.maven.org/maven2/org/postgresql/postgresql/${PG_JDBC_VERSION}/postgresql-${PG_JDBC_VERSION}.jar"; \
+    # wget sólo se necesita en build; el JRE lo resuelve flyway vía `java` en PATH
+    apt-get purge -y --auto-remove wget; \
     rm -rf /var/lib/apt/lists/*; \
-    # sanity: el tarball linux-x64 trae un JRE embebido; si no, el build falla acá
-    flyway --version
+    # sanity: flyway arranca con el java de debian y el gosu recompilado funciona
+    flyway --version; \
+    gosu nobody true
