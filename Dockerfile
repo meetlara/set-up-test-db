@@ -24,10 +24,16 @@
 FROM golang:1.26-bookworm AS gosu
 RUN CGO_ENABLED=0 go install -ldflags "-s -w" github.com/tianon/gosu@latest
 
-FROM pgvector/pgvector:0.8.2-pg16
+# base pineada por digest para evitar drift de tag mutable (igual corremos
+# apt-get upgrade abajo, así que los security patches del OS los tomamos nosotros)
+FROM pgvector/pgvector:0.8.2-pg16@sha256:00ba258a66dac104fd5171074a0084462a64a1369d8513f3d0a634e2f24d15bc
 
 ENV FLYWAY_VERSION=8.5.11 \
-    PG_JDBC_VERSION=42.7.13
+    PG_JDBC_VERSION=42.7.13 \
+    # checksums fijados en el repo (Maven Central sólo publica sha1); se validan
+    # antes de extraer/usar los artefactos bajados
+    FLYWAY_SHA256=aa60efb9bc965814536eca550d20028a4942e9af25e67e32f3cbf3dd56459d5d \
+    PG_JDBC_SHA256=6e0e4cc2d8cae902084f8a2b18728b073a6fd9d1f87c9d8bff8f298c18185b93
 
 COPY --from=gosu /go/bin/gosu /usr/local/bin/gosu
 
@@ -38,6 +44,7 @@ RUN set -eux; \
     # flyway SIN jre embebido (usa el java de debian, que sí recibe security updates)
     wget -qO /tmp/flyway.tar.gz \
       "https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/${FLYWAY_VERSION}/flyway-commandline-${FLYWAY_VERSION}.tar.gz"; \
+    echo "${FLYWAY_SHA256}  /tmp/flyway.tar.gz" | sha256sum -c -; \
     mkdir -p /opt/flyway; \
     tar -xzf /tmp/flyway.tar.gz -C /opt/flyway --strip-components=1; \
     rm -f /tmp/flyway.tar.gz; \
@@ -47,6 +54,7 @@ RUN set -eux; \
     mkdir -p /opt/flyway/drivers; \
     wget -qO "/opt/flyway/drivers/postgresql-${PG_JDBC_VERSION}.jar" \
       "https://repo1.maven.org/maven2/org/postgresql/postgresql/${PG_JDBC_VERSION}/postgresql-${PG_JDBC_VERSION}.jar"; \
+    echo "${PG_JDBC_SHA256}  /opt/flyway/drivers/postgresql-${PG_JDBC_VERSION}.jar" | sha256sum -c -; \
     # wget sólo se necesita en build; el JRE lo resuelve flyway vía `java` en PATH
     apt-get purge -y --auto-remove wget; \
     rm -rf /var/lib/apt/lists/*; \

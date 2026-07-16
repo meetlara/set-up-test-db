@@ -12,8 +12,14 @@ jobs:
   build:
     name: Build & push to ECR
     runs-on: ubuntu-latest
+    # Sólo publicamos desde main: el dispatch manual desde una branch no debe poder
+    # pushear código no-mergeado a los tags :latest / :pg16-fw8 de ECR.
+    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v6
+        with:
+          # este job no hace git push; no persistir el token reduce superficie
+          persist-credentials: false
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
