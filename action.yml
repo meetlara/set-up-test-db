@@ -129,13 +129,25 @@ runs:
             -p "$DB_PORT":5432 \
             "$BASE_IMAGE"
 
+          # Esperamos a que la DB responda una query REAL por TCP. Ojo: el entrypoint
+          # de postgres arranca un server temporal socket-only durante el initdb, y
+          # `pg_isready` (o cualquier query por socket) da "listo" ahí, ANTES de que
+          # exista POSTGRES_DB -> race que hacía fallar los steps siguientes con
+          # 'database "..." does not exist'. El server temporal NO escucha TCP, así
+          # que un SELECT vía -h 127.0.0.1 solo pasa con el server real ya inicializado.
           echo "Esperando postgres..."
-          for i in $(seq 1 30); do
-            if docker exec lara-testdb pg_isready -U "$DB_USER" -d "$DB_NAME" >/dev/null 2>&1; then
-              echo "postgres listo"; break
+          ready=""
+          for i in $(seq 1 60); do
+            if docker exec lara-testdb psql -U "$DB_USER" -h 127.0.0.1 -d "$DB_NAME" -c 'SELECT 1' >/dev/null 2>&1; then
+              echo "postgres listo"; ready=1; break
             fi
             sleep 1
           done
+          if [ -z "$ready" ]; then
+            echo "::error::postgres/$DB_NAME no quedó listo tras 60s"
+            docker logs lara-testdb || true
+            exit 1
+          fi
 
           # Extensions (postgresql-action las crea en modo default; acá lo hacemos a mano)
           for ext in $DB_EXTENSIONS; do
