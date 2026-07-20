@@ -138,7 +138,7 @@ runs:
           echo "Esperando postgres..."
           ready=""
           for i in $(seq 1 60); do
-            if docker exec lara-testdb psql -U "$DB_USER" -h 127.0.0.1 -d "$DB_NAME" -c 'SELECT 1' >/dev/null 2>&1; then
+            if docker exec -e PGPASSWORD="$DB_PASSWORD" lara-testdb psql -U "$DB_USER" -h 127.0.0.1 -d "$DB_NAME" -c 'SELECT 1' >/dev/null 2>&1; then
               echo "postgres listo"; ready=1; break
             fi
             sleep 1
