@@ -67,6 +67,10 @@ inputs:
     description: Migrate file service
     required: false
     default: "false"
+  migrate_ai_gateway:
+    description: Migrate the ai_gateway schema of meetlara/ai-gateway, before every service and the service itself
+    required: false
+    default: "false"
   migrate_self:
     description: Migrate the service itself
     required: false
@@ -181,6 +185,29 @@ runs:
           done
 
       # (v2 no instala flyway en el runner: viene del shim que apunta al container)
+
+      # Migrate ai-gateway: su schema va antes que cualquier servicio, porque las migraciones de los servicios insertan casos de uso en ese schema
+      - name: Copy migrations from ai-gateway
+        uses: actions/checkout@v3
+        if: inputs.migrate_ai_gateway == 'true'
+        with:
+          repository: 'meetlara/ai-gateway'
+          ref: 'main'
+          token: ${{ inputs.github_token }}
+          path: ai-gateway
+      - name: Make ai-gateway migrations
+        shell: bash
+        id: make-ai-gateway-migrations
+        if: inputs.migrate_ai_gateway == 'true'
+        env:
+          DB_PORT: ${{ inputs.db_port }}
+          DB_NAME: ${{ inputs.db_name }}
+        run: |
+          flyway migrate -url=jdbc:postgresql://localhost:$DB_PORT/$DB_NAME \
+            -user=admin \
+            -password=admin \
+            -locations=ai-gateway/db/migrations \
+            -configFiles=ai-gateway/db/test/conf/flyway.conf
 
       - name: Make migrations before clerk
         shell: bash
