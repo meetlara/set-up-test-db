@@ -202,10 +202,12 @@ runs:
         env:
           DB_PORT: ${{ inputs.db_port }}
           DB_NAME: ${{ inputs.db_name }}
+          DB_USER: ${{ inputs.db_user }}
+          DB_PASSWORD: ${{ inputs.db_password }}
         run: |
           flyway migrate -url=jdbc:postgresql://localhost:$DB_PORT/$DB_NAME \
-            -user=admin \
-            -password=admin \
+            -user=$DB_USER \
+            -password=$DB_PASSWORD \
             -locations=ai-gateway/db/migrations \
             -configFiles=ai-gateway/db/test/conf/flyway.conf
 
